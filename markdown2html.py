@@ -27,14 +27,14 @@ def main():
         sys.exit(1)
 
     out_lines = []
-    in_list = False
+    list_type = None  # None, 'ul' or 'ol'
     for line in lines:
         s = line.rstrip('\n')
         # Heading has priority. If a heading appears while in a list, close the list.
         if s.startswith('#'):
-            if in_list:
-                out_lines.append('</ul>\n')
-                in_list = False
+            if list_type is not None:
+                out_lines.append(f"</{list_type}>\n")
+                list_type = None
             # Count leading '#' until first space
             parts = s.split(' ', 1)
             if len(parts) == 2 and parts[0].count('#') == len(parts[0]) and 1 <= len(parts[0]) <= 6:
@@ -45,17 +45,35 @@ def main():
 
         # Unordered list item: lines starting with '- ' (strict syntax)
         if s.startswith('- '):
-            if not in_list:
+            if list_type is None:
                 out_lines.append('<ul>\n')
-                in_list = True
+                list_type = 'ul'
+            elif list_type != 'ul':
+                # close previous list and open ul
+                out_lines.append(f"</{list_type}>\n")
+                out_lines.append('<ul>\n')
+                list_type = 'ul'
+            text = s[2:]
+            out_lines.append(f"<li>{text}</li>\n")
+            continue
+
+        # Ordered list item: lines starting with '* ' (strict syntax)
+        if s.startswith('* '):
+            if list_type is None:
+                out_lines.append('<ol>\n')
+                list_type = 'ol'
+            elif list_type != 'ol':
+                out_lines.append(f"</{list_type}>\n")
+                out_lines.append('<ol>\n')
+                list_type = 'ol'
             text = s[2:]
             out_lines.append(f"<li>{text}</li>\n")
             continue
 
         # Non-heading, non-list lines: if we are in a list, close it first
-        if in_list:
-            out_lines.append('</ul>\n')
-            in_list = False
+        if list_type is not None:
+            out_lines.append(f"</{list_type}>\n")
+            list_type = None
 
         if s == '':
             out_lines.append('\n')
@@ -63,8 +81,8 @@ def main():
             out_lines.append(s + '\n')
 
     # Close any open list at EOF
-    if in_list:
-        out_lines.append('</ul>\n')
+    if list_type is not None:
+        out_lines.append(f"</{list_type}>\n")
 
     try:
         with open(output_file, 'w') as f_out:
