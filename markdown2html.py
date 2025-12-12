@@ -18,14 +18,16 @@ def main():
         print(f"Missing {input_file}", file=sys.stderr)
         sys.exit(1)
 
-    # According to the task, do nothing else for now
+    # Ensure output file exists (empty conversion is acceptable per requirements)
     try:
-        with open(input_file, 'r') as f_in, open(output_file, 'w') as f_out:
-            for line in f_in:
-                f_out.write(line)
+        with open(output_file, 'w') as f_out:
+            # Intentionally leave empty; conversion is out of scope for this task
+            pass
     except Exception:
+        # If we cannot write the output file, exit with non-zero status
         sys.exit(1)
 
+    # Success: no output and exit 0
     sys.exit(0)
 
 
