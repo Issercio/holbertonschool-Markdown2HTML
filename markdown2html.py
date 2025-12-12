@@ -5,9 +5,11 @@ Minimal markdown2html converter starter per requirements.
 import sys
 import os
 import re
+import hashlib
 
 
 def main():
+    # main
     if len(sys.argv) < 3:
         print("Usage: ./markdown2html.py README.md README.html", file=sys.stderr)
         sys.exit(1)
@@ -32,7 +34,22 @@ def main():
     para = []
     
     def _format_inline(text):
-        """Format inline markdown: **bold** -> <b>..</b>, __em__ -> <em>..</em>."""
+        """Format inline markdown: **bold** -> <b>..</b>, __em__ -> <em>..</em>.
+
+        Also supports custom transforms:
+        - ((text)) -> remove all 'c' and 'C' characters from text
+        - [[text]] -> md5 hash (lowercase hex) of text
+        """
+        # Custom: ((text)) -> remove all 'c'/'C' characters (case-insensitive)
+        def _remove_c(m):
+            inner = m.group(1)
+            return re.sub(r"[cC]", "", inner)
+        text = re.sub(r"\(\((.*?)\)\)", lambda m: _remove_c(m), text)
+        # Custom: [[text]] -> md5 hash (lowercase hex)
+        def _md5(m):
+            inner = m.group(1).encode('utf-8')
+            return hashlib.md5(inner).hexdigest()
+        text = re.sub(r"\[\[(.*?)\]\]", lambda m: _md5(m), text)
         # Bold: **text** -> <b>text</b>
         text = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", text)
         # Emphasis: __text__ -> <em>text</em>
