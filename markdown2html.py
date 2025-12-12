@@ -28,6 +28,7 @@ def main():
 
     out_lines = []
     list_type = None  # None, 'ul' or 'ol'
+    para = []
     for line in lines:
         s = line.rstrip('\n')
         # Heading has priority. If a heading appears while in a list, close the list.
@@ -75,14 +76,35 @@ def main():
             out_lines.append(f"</{list_type}>\n")
             list_type = None
 
+        # Paragraph handling: accumulate consecutive non-empty lines
         if s == '':
-            out_lines.append('\n')
+            # Blank line: flush paragraph if any, and produce a newline for separation
+            if para:
+                # write paragraph
+                out_lines.append('<p>\n')
+                out_lines.append(para[0] + '\n')
+                for pline in para[1:]:
+                    out_lines.append('<br/>\n')
+                    out_lines.append(pline + '\n')
+                out_lines.append('</p>\n')
+                para = []
+            else:
+                out_lines.append('\n')
         else:
-            out_lines.append(s + '\n')
+            para.append(s)
 
     # Close any open list at EOF
     if list_type is not None:
         out_lines.append(f"</{list_type}>\n")
+
+    # Flush any pending paragraph at EOF
+    if para:
+        out_lines.append('<p>\n')
+        out_lines.append(para[0] + '\n')
+        for pline in para[1:]:
+            out_lines.append('<br/>\n')
+            out_lines.append(pline + '\n')
+        out_lines.append('</p>\n')
 
     try:
         with open(output_file, 'w') as f_out:
