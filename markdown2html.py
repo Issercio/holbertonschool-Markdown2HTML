@@ -4,6 +4,7 @@ Minimal markdown2html converter starter per requirements.
 """
 import sys
 import os
+import re
 
 
 def main():
@@ -29,6 +30,14 @@ def main():
     out_lines = []
     list_type = None  # None, 'ul' or 'ol'
     para = []
+    
+    def _format_inline(text):
+        """Format inline markdown: **bold** -> <b>..</b>, __em__ -> <em>..</em>."""
+        # Bold: **text** -> <b>text</b>
+        text = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", text)
+        # Emphasis: __text__ -> <em>text</em>
+        text = re.sub(r"__(.*?)__", r"<em>\1</em>", text)
+        return text
     for line in lines:
         s = line.rstrip('\n')
         # Heading has priority. If a heading appears while in a list, close the list.
@@ -40,7 +49,7 @@ def main():
             parts = s.split(' ', 1)
             if len(parts) == 2 and parts[0].count('#') == len(parts[0]) and 1 <= len(parts[0]) <= 6:
                 level = len(parts[0])
-                text = parts[1]
+                text = _format_inline(parts[1])
                 out_lines.append(f"<h{level}>{text}</h{level}>\n")
                 continue
 
@@ -54,7 +63,7 @@ def main():
                 out_lines.append(f"</{list_type}>\n")
                 out_lines.append('<ul>\n')
                 list_type = 'ul'
-            text = s[2:]
+            text = _format_inline(s[2:])
             out_lines.append(f"<li>{text}</li>\n")
             continue
 
@@ -67,7 +76,7 @@ def main():
                 out_lines.append(f"</{list_type}>\n")
                 out_lines.append('<ol>\n')
                 list_type = 'ol'
-            text = s[2:]
+            text = _format_inline(s[2:])
             out_lines.append(f"<li>{text}</li>\n")
             continue
 
@@ -82,10 +91,10 @@ def main():
             if para:
                 # write paragraph
                 out_lines.append('<p>\n')
-                out_lines.append(para[0] + '\n')
+                out_lines.append(_format_inline(para[0]) + '\n')
                 for pline in para[1:]:
                     out_lines.append('<br/>\n')
-                    out_lines.append(pline + '\n')
+                    out_lines.append(_format_inline(pline) + '\n')
                 out_lines.append('</p>\n')
                 para = []
             else:
@@ -100,10 +109,10 @@ def main():
     # Flush any pending paragraph at EOF
     if para:
         out_lines.append('<p>\n')
-        out_lines.append(para[0] + '\n')
+        out_lines.append(_format_inline(para[0]) + '\n')
         for pline in para[1:]:
             out_lines.append('<br/>\n')
-            out_lines.append(pline + '\n')
+            out_lines.append(_format_inline(pline) + '\n')
         out_lines.append('</p>\n')
 
     try:
