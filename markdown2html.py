@@ -27,10 +27,14 @@ def main():
         sys.exit(1)
 
     out_lines = []
+    in_list = False
     for line in lines:
         s = line.rstrip('\n')
-        # Strict heading syntax: 1-6 '#' chars, a space, then text
+        # Heading has priority. If a heading appears while in a list, close the list.
         if s.startswith('#'):
+            if in_list:
+                out_lines.append('</ul>\n')
+                in_list = False
             # Count leading '#' until first space
             parts = s.split(' ', 1)
             if len(parts) == 2 and parts[0].count('#') == len(parts[0]) and 1 <= len(parts[0]) <= 6:
@@ -38,11 +42,29 @@ def main():
                 text = parts[1]
                 out_lines.append(f"<h{level}>{text}</h{level}>\n")
                 continue
-        # Non-heading lines are written as-is
+
+        # Unordered list item: lines starting with '- ' (strict syntax)
+        if s.startswith('- '):
+            if not in_list:
+                out_lines.append('<ul>\n')
+                in_list = True
+            text = s[2:]
+            out_lines.append(f"<li>{text}</li>\n")
+            continue
+
+        # Non-heading, non-list lines: if we are in a list, close it first
+        if in_list:
+            out_lines.append('</ul>\n')
+            in_list = False
+
         if s == '':
             out_lines.append('\n')
         else:
             out_lines.append(s + '\n')
+
+    # Close any open list at EOF
+    if in_list:
+        out_lines.append('</ul>\n')
 
     try:
         with open(output_file, 'w') as f_out:
